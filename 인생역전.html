@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>인생역전</title>
+<style>
+:root{--bg:#10231c;--panel:#173628;--ink:#f3efe0;--dim:#9db8a8;--up:#ff5a5f;--down:#4d9bff;--gold:#f2c14e;--paper:#f1e8cf;--pi:#2a2418;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#10231c}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+body{min-height:100%}
+button{font:inherit;color:inherit;cursor:pointer;border:0;border-radius:10px;padding:10px 12px;background:#24523b;font-weight:700}
+button:focus-visible{outline:3px solid var(--gold)}
+button:disabled{opacity:.4}
+#app{max-width:560px;margin:0 auto;padding:10px}
+.screen{display:none;text-align:center;padding:40px 16px}
+.screen.on{display:block}
+.title{font-family:"Noto Serif KR","Batang",serif;font-size:56px;margin:20px 0 6px;color:var(--gold);letter-spacing:4px}
+.big{font-size:80px}
+.btn-main{background:var(--gold);color:#2a2418;font-size:20px;padding:14px 36px;margin-top:20px}
+.bar{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px}
+.bar div{background:var(--panel);border-radius:10px;padding:6px 8px;font-size:12px;color:var(--dim)}
+.bar b{display:block;font-size:15px;color:var(--ink)}
+.warn{color:var(--gold)!important}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px}
+.tabs button{padding:6px 2px;font-size:12px;background:var(--panel)}
+.tabs button.sel{background:var(--gold);color:#2a2418}
+.tabs span{display:block;font-size:20px}
+.chart{background:var(--panel);border-radius:12px;padding:8px}
+.chart h3{margin:0 0 4px;font-size:15px;display:flex;justify-content:space-between}
+svg{width:100%;height:160px;display:block}
+.hold{font-size:13px;color:var(--dim);margin:6px 0}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:6px 0}
+.row .buy{background:#a8323a}.row .sell{background:#2b64b8}
+.act{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.msg{min-height:20px;font-size:13px;color:var(--gold);margin:6px 0;text-align:center}
+.help{font-size:11px;color:var(--dim);text-align:center;margin-top:8px}
+#paper{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;padding:16px;z-index:5}
+#paper.on{display:flex}
+.news{background:var(--paper);color:var(--pi);border-radius:6px;padding:18px;max-width:420px;width:100%;font-family:"Noto Serif KR","Batang",serif;box-shadow:0 8px 30px #000a}
+.news h2{margin:0;text-align:center;font-size:26px;border-bottom:3px double var(--pi);padding-bottom:6px}
+.news small{display:block;text-align:center;margin:4px 0 10px}
+.news h4{font-size:18px;margin:8px 0}
+.news p{font-size:13px;margin:6px 0}
+.news button{background:var(--pi);color:var(--paper);width:100%;margin-top:10px}
+.stat{font-size:18px;line-height:1.9}
+</style>
+</head>
+<body>
+<div id="app">
+ <section id="s-start" class="screen on">
+  <div class="big">📈</div>
+  <div class="title">인생역전</div>
+  <p>주식을 사고 팔아 돈을 굴리세요.<br>돈이 떨어지거나 월세를 못 내면 끝납니다.</p>
+  <p style="font-size:13px;color:var(--dim)">📰 매수 전에 오늘의 시사를 꼭 확인하세요!</p>
+  <button class="btn-main" id="start">게임 시작</button>
+  <p class="help">PC: 마우스 클릭 또는 ←→ 종목, B 매수, S 매도, N 다음날, M 신문<br>폰: 화면 버튼을 터치</p>
+ </section>
+
+ <section id="s-game" class="screen" style="padding:0">
+  <div class="bar">
+   <div>📅 날짜<b id="day">1일차</b></div>
+   <div>💰 보유 현금<b id="cash"></b></div>
+   <div>🏦 총 자산(점수)<b id="asset"></b></div>
+   <div>🏠 월세<b id="rent"></b></div>
+   <div>⏳ 월세까지<b id="due"></b></div>
+   <div>🧾 수수료 · 세금<b id="fees"></b></div>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div class="chart"><h3><span id="cn"></span><span id="cp"></span></h3><svg id="svg" viewBox="0 0 300 160" preserveAspectRatio="none"></svg></div>
+  <div class="hold" id="hold"></div>
+  <div class="row">
+   <button class="buy" data-b="1">매수 1주 (B)</button><button class="sell" data-s="1">매도 1주 (S)</button>
+   <button class="buy" data-b="10">매수 10주</button><button class="sell" data-s="10">매도 10주</button>
+   <button class="buy" data-b="0">최대 매수</button><button class="sell" data-s="0">전량 매도</button>
+  </div>
+  <div class="msg" id="msg"></div>
+  <div class="act"><button id="read">📰 오늘의 시사 (M)</button><button id="next" style="background:var(--gold);color:#2a2418">다음 날로 ▶ (N)</button></div>
+  <p class="help">종목은 위 탭, 방향키 ←→ 로 고를 수 있어요.</p>
+ </section>
+
+ <section id="s-over" class="screen">
+  <div class="big">💸</div>
+  <div class="title" style="font-size:40px">게임 오버</div>
+  <p id="why"></p>
+  <div class="stat" id="final"></div>
+  <button class="btn-main" id="again">다시 하기</button>
+ </section>
+</div>
+
+<div id="paper"><div class="news" id="news"></div></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const won=n=>Math.round(n).toLocaleString('ko-KR')+'원';
+const DEF=[{n:'한빛모터',e:'🚗',k:'car',p:52000,v:.05},{n:'네오칩',e:'💻',k:'chip',p:78000,v:.08},{n:'맛나푸드',e:'🍜',k:'food',p:31000,v:.03},{n:'대양에너지',e:'🛢️',k:'oil',p:45000,v:.06},
+{n:'새봄바이오',e:'💊',k:'bio',p:64000,v:.09},{n:'별빛엔터',e:'🎤',k:'ent',p:38000,v:.07},{n:'튼튼건설',e:'🏗️',k:'build',p:27000,v:.05},{n:'하늘항공',e:'✈️',k:'air',p:21000,v:.07}];
+const ISS=[
+{e:'⛽',t:'국제 유가 급등, 기름값 비상',b:'유가가 치솟자 에너지 업계는 웃고, 자동차와 항공 업계는 울상이다.',fx:{oil:1,car:-1,air:-1}},
+{e:'🦠',t:'신종 독감 확산, 마스크 대란',b:'바이오 업계가 주목받는 반면 여행과 공연 수요는 얼어붙고 있다.',fx:{bio:1,air:-1,ent:-1}},
+{e:'🏦',t:'중앙은행 기준금리 인하',b:'대출 부담이 줄어 건설과 기술주에 훈풍이 불 전망이다.',fx:{build:1,chip:1}},
+{e:'📉',t:'중앙은행 기준금리 인상',b:'이자 부담이 커지면서 건설과 기술주가 흔들리고 있다.',fx:{build:-1,chip:-1}},
+{e:'🎶',t:'한류 열풍, 해외 팬들 몰려온다',b:'엔터 업계가 사상 최대 해외 매출을 기대하고 있다.',fx:{ent:1}},
+{e:'🔌',t:'전기차 보조금 대폭 확대',b:'자동차 업계엔 호재지만 에너지 업계는 긴장하고 있다.',fx:{car:1,oil:-1}},
+{e:'🚫',t:'반도체 수출 규제 강화',b:'기술 업계의 해외 판매길이 좁아질 것이라는 우려가 나온다.',fx:{chip:-1}},
+{e:'🌡️',t:'기록적 폭염, 전력 사용 폭증',b:'에너지 업계는 수혜를 보지만 식품 원가 부담은 커졌다.',fx:{oil:1,food:-1}},
+{e:'🛒',t:'장바구니 물가 폭등',b:'먹거리 가격이 오르며 식품 업계 매출이 늘고 있다.',fx:{food:1}},
+{e:'🎉',t:'황금연휴 시작, 여행 인파 북적',b:'항공, 엔터, 식품 업계가 연휴 특수를 누리고 있다.',fx:{air:1,ent:1,food:1}},
+{e:'🌀',t:'초대형 태풍 북상',b:'항공편이 줄줄이 결항되고 건설 현장도 멈춰 섰다.',fx:{air:-1,build:-1}},
+{e:'🇺🇸',t:'미국, 세금징수 강화 예고',b:'세금 부담 우려로 시장 전체가 움츠러들고 있다.',fx:{all:-1}},
+{e:'🚀',t:'증시 훈풍, 외국인 매수세 유입',b:'투자 심리가 살아나며 대부분의 종목이 들썩이고 있다.',fx:{all:1}},
+{e:'😰',t:'경기 침체 우려 확산',b:'소비가 얼어붙을 것이라는 전망에 투자자들이 몸을 사린다.',fx:{all:-1}},
+{e:'👴',t:'고령화 대책 발표, 의료 투자 확대',b:'정부가 의료와 바이오 분야 지원을 늘리기로 했다.',fx:{bio:1}},
+{e:'🏠',t:'정부, 부동산 규제 발표',b:'건설 업계의 신규 사업이 위축될 것으로 보인다.',fx:{build:-1}},
+{e:'🏙️',t:'신도시 개발 계획 발표',b:'대규모 공사가 예정되며 건설 업계가 기대감에 들떴다.',fx:{build:1}}];
+const UP=['{n}, 신제품 대박… 주문 폭주','{n}, 사상 최대 실적 발표','{n}, 해외 대형 계약 따냈다'];
+const DN=['{n}, 공장 화재로 생산 차질','{n}, 실적 쇼크… 투자자 실망','{n}, 대표 비리 의혹 수사 착수'];
+let S,sel=0,best=0,over=true,readToday=false;
+
+function newGame(){
+ S={day:1,cash:1000000,rent:150000,fee:.005,tax:.05,stocks:DEF.slice(0,4).map(d=>({...d,hist:[d.p],qty:0,avg:0})),pool:DEF.slice(4),news:null};
+ sel=0;over=false;makeNews();show('s-game');$('msg').textContent='';render();
+}
+function makeNews(){
+ const real=Math.random()<.8;
+ if(Math.random()<.35){
+  const s=S.stocks[Math.floor(Math.random()*S.stocks.length)],dir=Math.random()<.5?1:-1;
+  const t=(dir>0?UP:DN)[Math.floor(Math.random()*3)].replace('{n}',s.n);
+  S.news={e:s.e,t,b:'전문가들은 이번 소식이 주가에 '+(dir>0?'호재':'악재')+'로 작용할 가능성이 크다고 전했다.',fx:{[s.k]:dir},mag:.13,real};
+ }else{
+  const x=ISS[Math.floor(Math.random()*ISS.length)];
+  S.news={e:x.e,t:x.t,b:x.b,fx:x.fx,mag:x.fx.all?.05:.1,real};
+ }
+ readToday=false;
+}
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id))}
+function assets(){return S.cash+S.stocks.reduce((a,s)=>a+s.qty*s.p,0)}
+function daysToRent(){return 7-(S.day%7)}
+function render(){
+ $('day').textContent=S.day+'일차';
+ $('cash').textContent=won(S.cash);
+ $('asset').textContent=won(assets());
+ $('rent').textContent=won(S.rent);
+ const d=daysToRent();$('due').textContent=d+'일 후';$('due').className=d<=2?'warn':'';
+ $('fees').textContent='수수료 '+(S.fee*100).toFixed(1)+'% · 세금 '+Math.round(S.tax*100)+'%';
+ $('tabs').innerHTML=S.stocks.map((s,i)=>`<button class="${i===sel?'sel':''}" data-t="${i}"><span>${s.e}</span>${s.n}<br>${won(s.p)}</button>`).join('');
+ const s=S.stocks[sel],h=s.hist,prev=h.length>1?h[h.length-2]:s.p,ch=(s.p-prev)/prev*100;
+ $('cn').textContent=s.e+' '+s.n;
+ $('cp').innerHTML=`<span style="color:${ch>=0?'var(--up)':'var(--down)'}">${won(s.p)} (${ch>=0?'▲':'▼'}${Math.abs(ch).toFixed(1)}%)</span>`;
+ $('hold').textContent=s.qty?`보유 ${s.qty}주 · 평균 매수가 ${won(s.avg)} · 평가손익 ${won((s.p-s.avg)*s.qty)}`:'보유 수량 없음';
+ $('read').textContent=(readToday?'📰':'📰 ❗')+' 오늘의 시사 (M)';
+ chart(s);
+}
+function chart(s){
+ const h=s.hist.slice(-30),mn=Math.min(...h),mx=Math.max(...h),r=(mx-mn)||1;
+ const pts=h.map((v,i)=>[h.length===1?150:i*(300/(Math.max(h.length-1,1))),150-(v-mn)/r*130]);
+ const up=h[h.length-1]>=h[0],c=up?'#ff5a5f':'#4d9bff';
+ let g='';for(let k=1;k<5;k++)g+=`<line x1="0" x2="300" y1="${k*30}" y2="${k*30}" stroke="#ffffff22"/>`;
+ const line=pts.map(p=>p.join(',')).join(' ');
+ $('svg').innerHTML=g+`<polygon points="0,160 ${line} 300,160" fill="${c}22"/><polyline points="${line}" fill="none" stroke="${c}" stroke-width="2.5" vector-effect="non-scaling-stroke"/>`;
+}
+function say(t){$('msg').textContent=t}
+function buy(n){
+ const s=S.stocks[sel],unit=s.p*(1+S.fee),max=Math.floor(S.cash/unit);
+ if(n===0)n=max;
+ if(n<1||n>max){say('돈이 부족해요.');return}
+ s.avg=(s.avg*s.qty+s.p*n)/(s.qty+n);s.qty+=n;S.cash-=unit*n;say(`${s.n} ${n}주 매수 완료`);render();
+}
+function sell(n){
+ const s=S.stocks[sel];if(n===0)n=s.qty;
+ if(s.qty<1||n>s.qty||n<1){say('팔 주식이 부족해요.');return}
+ const gain=(s.p-s.avg)*n,tax=Math.max(0,gain)*S.tax;
+ S.cash+=s.p*n-tax;s.qty-=n;if(!s.qty)s.avg=0;
+ say(`${s.n} ${n}주 매도 완료`+(tax>0?` (세금 ${won(tax)})`:''));render();
+}
+function openNews(){
+ const n=S.news;readToday=true;
+ $('news').innerHTML=`<h2>인생일보</h2><small>${S.day}일차 조간 · 오늘의 시사</small><h4>${n.e} ${n.t}</h4>
+ <p>${n.b} 다만 시장 반응은 예측과 다를 수 있다.</p>
+ <button id="close">신문 닫기</button>`;
+ $('paper').classList.add('on');$('close').onclick=closeNews;render();
+}
+function closeNews(){$('paper').classList.remove('on')}
+function nextDay(){
+ const n=S.news;
+ S.stocks.forEach((s,i)=>{
+  let r=(Math.random()-.5)*2*s.v;
+  r+=(n.real?1:-.6)*(n.fx[s.k]||n.fx.all||0)*n.mag;
+  s.p=Math.max(1000,Math.round(s.p*(1+r)/100)*100);s.hist.push(s.p);
+ });
+ S.day++;let m='';
+ if(S.day%7===0){
+  if(S.cash<S.rent){return end('월세를 내지 못했어요. 집에서 쫓겨났습니다. 🏚️')}
+  S.cash-=S.rent;S.rent+=20000;S.fee+=.003;S.tax+=.03;
+  m='🏠 월세 납부 완료! 🇺🇸 세금징수 강화: 수수료·세금이 올랐어요.';
+  if(S.pool.length){const ns=S.pool.shift();S.stocks.push({...ns,hist:[ns.p],qty:0,avg:0});m+=` 🆕 신규 상장: ${ns.e} ${ns.n}`}
+ }
+ const minP=Math.min(...S.stocks.map(s=>s.p*(1+S.fee))),held=S.stocks.some(s=>s.qty>0);
+ if(!held&&S.cash<minP)return end('돈이 다 떨어졌어요. 더는 주식을 살 수 없습니다. 💸');
+ makeNews();say(m);render();
+}
+function end(why){
+ over=true;const a=assets(),days=S.day;best=Math.max(best,a);
+ $('why').textContent=why;
+ $('final').innerHTML=`📅 버틴 날: ${days}일<br>🏦 최종 자산(점수): ${won(a)}<br>🏆 최고 기록: ${won(best)}`;
+ closeNews();show('s-over');
+}
+$('start').onclick=newGame;$('again').onclick=newGame;
+$('next').onclick=nextDay;$('read').onclick=openNews;
+document.addEventListener('click',e=>{
+ const b=e.target.closest('button');if(!b||over)return;
+ if(b.dataset.t!==undefined){sel=+b.dataset.t;render()}
+ if(b.dataset.b!==undefined)buy(+b.dataset.b);
+ if(b.dataset.s!==undefined)sell(+b.dataset.s);
+});
+document.addEventListener('keydown',e=>{
+ if(over){if(e.key==='Enter')newGame();return}
+ if($('paper').classList.contains('on')){if(['Escape','Enter','m','M'].includes(e.key))closeNews();return}
+ const k=e.key.toLowerCase();
+ if(k==='arrowleft'){sel=(sel+S.stocks.length-1)%S.stocks.length;render()}
+ else if(k==='arrowright'){sel=(sel+1)%S.stocks.length;render()}
+ else if(k>='1'&&+k<=S.stocks.length){sel=+k-1;render()}
+ else if(k==='b'||k==='ㅠ')buy(1);
+ else if(k==='s'||k==='ㄴ')sell(1);
+ else if(k==='n'||k==='ㅜ')nextDay();
+ else if(k==='m'||k==='ㅡ')openNews();
+});
+</script>
+</body>
+</html>
